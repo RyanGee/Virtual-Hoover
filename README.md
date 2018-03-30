@@ -1,8 +1,8 @@
 # Virtual-Hoover
-A program that navigates a imaginary robotic hoover, returning final position and spots of dirt cleaned in the browser console.
+A program that navigates an imaginary robotic hoover, returning final position and spots of dirt cleaned in the browser console.
 
 ## How to run this program
-1. Clone the repo and open the index.html file in any modern browser
+1. Clone the repo and open the index.html file locally in any modern browser.
 2. Use the "Choose File" button to select an input file (must follow format outlined below).
 3. Open the browser console to view program output, including final position and number of dirt spots cleaned. 
 
