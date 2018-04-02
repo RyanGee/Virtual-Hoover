@@ -1,33 +1,35 @@
 window.onload = function() {
 
-		//User selects input.txt file
-		var fileInput = document.getElementById('fileInput');
-		var fileDisplayArea = document.getElementById('fileDisplayArea');
+	//User selects input.txt file
+	var fileInput = document.getElementById('fileInput');
+	var fileDisplayArea = document.getElementById('fileDisplayArea');
 
-		fileInput.addEventListener('change', function(e) {
-			this.disabled = true;
-			var file = fileInput.files[0];
-			var textType = /text.*/;
+	fileInput.addEventListener('change', function(e) {
 
-			if (file.type.match(textType)) {
-				var reader = new FileReader();
+		var file = fileInput.files[0];
+		var textType = /text.*/;
 
-				reader.onload = function(e) {
+		this.disabled = true;
 
-					//Accepted file is parsed into an array and used for hoover calculation
-					processFile(reader.result.split('\n'));
-				}
+		if (file.type.match(textType)) {
 
-				reader.readAsText(file);	
-			} else {
-				fileDisplayArea.innerText = "File not supported!";
+			var reader = new FileReader();
+
+			reader.onload = function(e) {
+				//Accepted file is parsed into an array and used for hoover calculation
+				processFile(reader.result);
 			}
-		});
+			reader.readAsText(file);
+		} else {
+			fileDisplayArea.innerText = "File not supported!";
+		}
+	});
 }
 
-function processFile(input) {
+function processFile(inputString) {
 
-	var roomSize = input.shift();
+	var input = inputString.trim().split('\n');
+	var roomSize = input.shift().split(' ');
 	var startPos = input.shift().split(' ');
 	var directions = input.pop().split('');
 
@@ -37,7 +39,9 @@ function processFile(input) {
 	});
 
 	var coords = ['x', 'y'];
-	var currentPos = startPos.associate(coords);
+	var currentPos = associate(coords, startPos);
+	var roomMax = associate(coords, roomSize);
+
 	var hooverPath = [];
 	var spotsCleaned = 0;
 
@@ -46,12 +50,14 @@ function processFile(input) {
 
 	// Attempt each movement, then add position to hoover path history
 	directions.forEach(function(direction){
-		currentPos = attemptMove(direction, currentPos, roomSize);
+		currentPos = attemptMove(direction, currentPos, roomMax);
 		hooverPath.push(currentPos.x + ' ' + currentPos.y);
 	});
 
-	// Remove duplicate hoover path history entries and calculate spots cleaned by counting matches in dirtSpots array
-	hooverPath = remove_duplicates_safe(hooverPath);
+	// Remove duplicate hoover path entries (assume hoover cleans all dirt spots on first visit to square)
+	hooverPath = removeDuplicates(hooverPath);
+
+	// Count number of matches between hoover path and locations of dirt spots
 	hooverPath.forEach(function(element){
 		spotsCleaned = spotsCleaned + countInArray(dirtSpots, element);
 	});
@@ -63,9 +69,11 @@ function processFile(input) {
 }
 
 // Associate two arrays and return result as JavaScript object 
-Array.prototype.associate = function (keys) {
+function associate(keys, values) {
+
 	var result = {};
-	this.forEach(function (el, i) {
+
+	values.forEach(function (el, i) {
 		result[keys[i]] = el;
 	});
 
@@ -73,57 +81,56 @@ Array.prototype.associate = function (keys) {
 };
 
 // Attempt movement and return resulting hoover position
-function attemptMove(direction, currentPos, roomSize) {
-	switch(direction.toLowerCase()) {
-		    case 'n':
-		        if ( currentPos.y < (roomSize.substr(2) - 1)) {
-		        	currentPos.y++;
-		        }
-		        break;
-		    case 's':
-		        if ( currentPos.y > 0) {
-		        	currentPos.y--;
-		        }
-		        break;
-	        case 'e':
-		        if ( currentPos.x < (roomSize.substr(0,1) - 1)) {
-		        	currentPos.x++;
-		        }
-	        	break;
-	        case 'w':
-		        if ( currentPos.x > 0) {
-		        	currentPos.x--;
-		        }
-	        	break;
-		    default:
-		    	console.log('Invalid instruction given - why are you trying to confuse my poor hoover?');
-		        break;
-		}
+function attemptMove(direction, currentPos, roomMax) {
 
-		return currentPos;
+	var newPos = Object.assign({}, currentPos);
+
+	switch(direction.toLowerCase()) {
+		case 'n':
+			if ( currentPos.y < (roomMax.y - 1)) {
+				newPos.y++;
+			}
+			break;
+		case 's':
+			if ( currentPos.y > 0) {
+				newPos.y--;
+			}
+			break;
+		case 'e':
+			if ( currentPos.x < (roomMax.x - 1)) {
+				newPos.x++;
+			}
+			break;
+		case 'w':
+			if ( currentPos.x > 0) {
+				newPos.x--;
+			}
+			break;
+		default:
+			console.log('Invalid instruction given - why are you trying to confuse my poor hoover?');
+			break;
+	}
+
+	return newPos;
+
 }
 
 // Remove duplicate entries from array
-function remove_duplicates_safe(arr) {
-    var seen = {};
-    var ret_arr = [];
-    for (var i = 0; i < arr.length; i++) {
-        if (!(arr[i] in seen)) {
-            ret_arr.push(arr[i]);
-            seen[arr[i]] = true;
-        }
-    }
-    return ret_arr;
+function removeDuplicates(arr) {
+	return Array.from(new Set(arr));
 }
 
 // Count number of times needle appears in haystack array
+// ***Unsure if a square can contain more than one spot of dirt, so return (int)count rather than boolean to deal with both cases***
 function countInArray(haystack, needle) {
 
-    var count = 0;
-    for (var i = 0; i < haystack.length; i++) {
-        if (haystack[i] === needle) {
-            count++;
-        }
-    }
-    return count;
+	var count = 0;
+
+	for (var i = 0; i < haystack.length; i++) {
+		if (haystack[i] === needle) {
+			count++;
+		}
+	}
+
+	return count;
 }
